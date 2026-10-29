@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LitterLedger — Litter, Puppy-Cost & Placement Tracker for Dog Breeders</title>
+<style>
+  :root{
+    --ink:#2b2118; --muted:#7a6a58; --brand:#8a5a2b; --brand2:#6d4520;
+    --bg:#f7f3ee; --card:#ffffff; --line:#e3d9cc; --accent:#f3e9db;
+    --warn:#9a3412; --warnbg:#fdf0e7; --bad:#b3261e; --good:#3d7a2e;
+  }
+  html{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
+  header{background:var(--brand2);color:#fff;padding:14px 16px}
+  header .wrap{max-width:1020px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+  header h1{font-size:20px;margin:0}
+  header .sub{font-size:12.5px;opacity:.85;margin-top:2px}
+  nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  nav .wrap{max-width:1020px;margin:0 auto;display:flex;flex-wrap:wrap;gap:2px;padding:6px 8px}
+  nav button{background:none;border:none;padding:9px 12px;font-size:14.5px;cursor:pointer;border-radius:6px;color:var(--ink)}
+  nav button.active{background:var(--accent);color:var(--brand2);font-weight:600}
+  main{max-width:1020px;margin:0 auto;padding:16px 12px 60px}
+  .tab{display:none}
+  .tab.active{display:block}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card .lbl{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .card .val{font-size:24px;font-weight:700;margin-top:4px}
+  .card .note{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+  .panel h2{margin:0 0 10px;font-size:17px}
+  .panel h3{margin:16px 0 8px;font-size:15px}
+  form.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+  input,select,textarea{width:100%;box-sizing:border-box;padding:8px 9px;border:1px solid var(--line);border-radius:6px;font-size:14.5px;background:#fff;color:var(--ink)}
+  textarea{min-height:56px}
+  .btn{background:var(--brand);color:#fff;border:none;padding:9px 16px;border-radius:6px;font-size:14.5px;cursor:pointer}
+  .btn:hover{background:var(--brand2)}
+  .btn.ghost{background:#fff;color:var(--brand2);border:1px solid var(--brand)}
+  .btn.danger{background:#fff;color:var(--bad);border:1px solid var(--bad)}
+  .btn.small{padding:4px 9px;font-size:13px;min-height:40px;}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.total td{font-weight:700;border-top:2px solid var(--ink);border-bottom:none}
+  .msg{font-size:13.5px;margin-top:8px;min-height:18px}
+  .msg.err{color:var(--bad)}
+  .msg.ok{color:var(--good)}
+  .flag{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:9px;background:var(--accent);color:var(--brand2)}
+  .flag.due{background:var(--warnbg);color:var(--warn)}
+  .flag.over{background:#fbe9e7;color:var(--bad)}
+  .flag.good{background:#e6f2e1;color:var(--good)}
+  .disclaimer{background:var(--warnbg);border:1px solid #f0c9ae;border-radius:8px;padding:10px 12px;font-size:13.5px;color:#6b3410}
+  .muted{color:var(--muted);font-size:13px}
+  .rowflex{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .spacer{flex:1}
+  #printSheet{display:none}
+  @media (max-width:640px){
+    .panel{overflow-x:auto}
+    header h1{font-size:17px}
+    .card .val{font-size:20px}
+    th,td{padding:6px 5px;font-size:13px}
+    nav button{padding:8px 9px;font-size:13.5px}
+  }
+  @media print{
+    header,nav,main{display:none !important}
+    #printSheet{display:block !important;font-size:13px;color:#000}
+    #printSheet h1{font-size:19px;margin:0 0 4px}
+    #printSheet h2{font-size:15px;margin:18px 0 6px}
+    #printSheet table{width:100%;border-collapse:collapse}
+    #printSheet th,#printSheet td{border-bottom:1px solid #bbb;padding:5px 6px;text-align:left}
+    #printSheet td.num,#printSheet th.num{text-align:right}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div>
+      <h1>🐾 LitterLedger</h1>
+      <div class="sub">Litter, puppy-cost &amp; placement tracker for dog breeders — offline, no account, your records stay on your device.</div>
+    </div>
+  </div>
+</header>
+<nav>
+  <div class="wrap" id="tabBar">
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="dogs">Dogs</button>
+    <button data-tab="litters">Litters &amp; Costs</button>
+    <button data-tab="puppies">Puppies</button>
+    <button data-tab="money">Money</button>
+    <button data-tab="waitlist">Waitlist</button>
+    <button data-tab="settings">Settings &amp; Backup</button>
+    <button data-tab="help">Help</button>
+  </div>
+</nav>
+<main id="app">
+
+  <!-- ============ DASHBOARD ============ -->
+  <section class="tab active" id="tab-dashboard">
+    <div class="cards">
+      <div class="card"><div class="lbl">Active litters</div><div class="val" id="dashLitters">0</div><div class="note" id="dashLittersNote"></div></div>
+      <div class="card"><div class="lbl">Puppies available</div><div class="val" id="dashAvail">0</div><div class="note" id="dashAvailNote"></div></div>
+      <div class="card"><div class="lbl">Outstanding balances</div><div class="val" id="dashOwed">$0.00</div><div class="note">Deposits + balances still to collect on reserved/placed puppies</div></div>
+      <div class="card"><div class="lbl">Next expected whelp</div><div class="val" id="dashWhelp" style="font-size:19px">—</div><div class="note" id="dashWhelpNote">Planning estimate from mating date — not a veterinary prediction</div></div>
+    </div>
+    <div class="panel">
+      <h2>Getting around</h2>
+      <p style="margin:6px 0">Start in <b>Dogs</b> with your dams and sires. Add a <b>Litter</b> when a breeding happens or puppies arrive, record its costs in the same tab, then track each puppy — weights, status, deposit, placement — in <b>Puppies</b>. The <b>Money</b> tab turns it all into cost per puppy, break-even price, and who still owes you what.</p>
+      <p class="muted" style="margin:6px 0">A sample litter is pre-loaded (one litter in progress, weights logged, two puppies placed) so you can see every screen working. Sample records are marked, and one button removes only the samples — your own records are never touched.</p>
+      <div class="rowflex">
+        <button class="btn ghost" id="btnClearDemoDash" type="button">Clear sample data</button>
+        <span class="msg" id="dashMsg"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Outstanding balances — follow-up list</h2>
+      <table><thead><tr><th>Puppy</th><th>Litter</th><th>Buyer</th><th>Status</th><th class="num">Still owed</th></tr></thead>
+      <tbody id="dashOwedList"></tbody></table>
+    </div>
+  </section>
+
+  <!-- ============ DOGS ============ -->
+  <section class="tab" id="tab-dogs">
+    <div class="panel">
+      <h2 id="dogFormTitle">Add a dog</h2>
+      <form class="grid" id="dogForm">
+        <div><label for="dogName">Name *</label><input type="text" id="dogName" placeholder="e.g. Daisy"></div>
+        <div><label for="dogRole">Role</label>
+          <select id="dogRole"><option value="Dam">Dam (female)</option><option value="Sire">Sire (male)</option></select></div>
+        <div><label for="dogBreed">Breed</label><input type="text" id="dogBreed" placeholder="e.g. Golden Retriever"></div>
+        <div><label for="dogDob">Date of birth</label><input type="date" id="dogDob"></div>
+        <div><label for="dogStatus">Status</label>
+          <select id="dogStatus"><option value="active">Active</option><option value="resting">Resting</option><option value="retired">Retired</option></select></div>
+        <div style="grid-column:span 2"><label for="dogReg">Registration info (free text)</label><input type="text" id="dogReg" placeholder="Registry, number, pedigree notes…"></div>
+        <div style="grid-column:span 2"><label for="dogHealth">Health-testing checklist — one entry per line (your records only)</label><textarea id="dogHealth" placeholder="OFA hips — Good&#10;Eye exam — clear 2026"></textarea></div>
+        <div style="grid-column:span 2"><label for="dogNotes">Notes</label><input type="text" id="dogNotes"></div>
+        <div><button class="btn" id="dogSave" type="submit">Save dog</button></div>
+        <div><button class="btn ghost" id="dogCancelEdit" type="button" style="display:none">Cancel edit</button></div>
+      </form>
+      <div class="msg" id="dogMsg"></div>
+      <p class="muted">Health entries are your own record-keeping — dates and results you were given. LitterLedger does not interpret them and gives no medical or breeding advice.</p>
+    </div>
+    <div class="panel">
+      <h2>Your dogs</h2>
+      <div id="dogList"></div>
+    </div>
+  </section>
+
+  <!-- ============ LITTERS & COSTS ============ -->
+  <section class="tab" id="tab-litters">
+    <div class="panel">
+      <h2 id="litterFormTitle">Add a litter</h2>
+      <form class="grid" id="litterForm">
+        <div><label for="litDam">Dam *</label><select id="litDam"></select></div>
+        <div><label for="litSire">Sire *</label><select id="litSire"></select></div>
+        <div><label for="litMating">Mating date (optional)</label><input type="date" id="litMating"></div>
+        <div><label for="litWhelp">Whelp date (blank if not yet whelped)</label><input type="date" id="litWhelp"></div>
+        <div><label for="litLive">Puppies born alive</label><input inputmode="decimal" type="number" id="litLive" step="1" min="0" value="0"></div>
+        <div><label for="litStill">Stillborn</label><input inputmode="decimal" type="number" id="litStill" step="1" min="0" value="0"></div>
+        <div style="grid-column:span 2"><label for="litNotes">Litter notes</label><input type="text" id="litNotes" placeholder="e.g. First litter, whelped through the night"></div>
+        <div><button class="btn" id="litterSave" type="submit">Save litter</button></div>
+        <div><button class="btn ghost" id="litterCancelEdit" type="button" style="display:none">Cancel edit</button></div>
+      </form>
+      <div class="msg" id="litMsg"></div>
+      <p class="muted" id="litExpectNote"></p>
+    </div>
+    <div class="panel">
+      <h2>Litters</h2>
+      <div id="litterList"></div>
+    </div>
+    <div class="panel">
+      <h2>Add a litter cost</h2>
+      <form class="grid" id="costForm">
+        <div><label for="costLitter">Litter *</label><select id="costLitter"></select></div>
+        <div><label for="costDate">Date</label><input type="date" id="costDate"></div>
+        <div><label for="costCat">Category</label>
+          <select id="costCat">
+            <option value="stud">Stud fee</option><option value="vet">Vet visits</option>
+            <option value="food">Food</option><option value="supplies">Supplies</option>
+            <option value="registration">Registration</option><option value="advertising">Advertising</option>
+            <option value="other">Other</option>
+          </select></div>
+        <div><label for="costAmount">Amount ($)</label><input inputmode="decimal" type="number" id="costAmount" step="0.01" min="0" placeholder="0.00"></div>
+        <div style="grid-column:span 2"><label for="costNotes">Notes</label><input type="text" id="costNotes" placeholder="What was it for?"></div>
+        <div><button class="btn" id="costSave" type="submit">Add cost</button></div>
+      </form>
+      <div class="msg" id="costMsg"></div>
+    </div>
+    <div class="panel">
+      <h2>Costs — <span id="costListTitle">all litters</span></h2>
+      <div class="rowflex" style="margin-bottom:8px">
+        <div style="min-width:220px"><label for="costFilter">Show costs for</label><select id="costFilter"></select></div>
+        <span class="spacer"></span>
+        <span class="muted" id="costTotalLine"></span>
+      </div>
+      <table><thead><tr><th>Date</th><th>Litter</th><th>Category</th><th>Notes</th><th class="num">Amount</th><th></th></tr></thead>
+      <tbody id="costList"></tbody></table>
+    </div>
+  </section>
+
+  <!-- ============ PUPPIES ============ -->
+  <section class="tab" id="tab-puppies">
+    <div class="panel">
+      <h2 id="pupFormTitle">Add a puppy</h2>
+      <form class="grid" id="pupForm">
+        <div><label for="pupLitter">Litter *</label><select id="pupLitter"></select></div>
+        <div><label for="pupName">Name / ID *</label><input type="text" id="pupName" placeholder="e.g. Clover, or Pink collar"></div>
+        <div><label for="pupSex">Sex</label>
+          <select id="pupSex"><option value="F">Female</option><option value="M">Male</option></select></div>
+        <div><label for="pupColor">Color / markings</label><input type="text" id="pupColor" placeholder="e.g. Light gold, white chest spot"></div>
+        <div><label for="pupBirthWt">Birth weight (oz)</label><input inputmode="decimal" type="number" id="pupBirthWt" step="0.1" min="0" placeholder="0"></div>
+        <div><label for="pupStatus">Status</label>
+          <select id="pupStatus">
+            <option value="available">Available</option><option value="reserved">Reserved</option>
+            <option value="placed">Placed</option><option value="kept">Kept</option>
+            <option value="deceased">Deceased</option>
+          </select></div>
+        <div><label for="pupDeceased">Date deceased (if applicable)</label><input type="date" id="pupDeceased"></div>
+        <div><label for="pupPrice">Sale price ($)</label><input inputmode="decimal" type="number" id="pupPrice" step="0.01" min="0" placeholder="0.00"></div>
+        <div><label for="pupDeposit">Deposit received ($)</label><input inputmode="decimal" type="number" id="pupDeposit" step="0.01" min="0" placeholder="0.00"></div>
+        <div><label for="pupBalancePaid">Balance paid so far ($)</label><input inputmode="decimal" type="number" id="pupBalancePaid" step="0.01" min="0" placeholder="0.00"></div>
+        <div><label for="pupExtra">Extra costs for this puppy ($)</label><input inputmode="decimal" type="number" id="pupExtra" step="0.01" min="0" placeholder="0.00"></div>
+        <div><label for="pupBuyer">Buyer name</label><input type="text" id="pupBuyer"></div>
+        <div><label for="pupContact">Buyer contact (stored on this device only)</label><input type="text" id="pupContact"></div>
+        <div><label for="pupPlacement">Placement date</label><input type="date" id="pupPlacement"></div>
+        <div style="grid-column:span 2"><label for="pupNotes">Notes</label><input type="text" id="pupNotes"></div>
+        <div><button class="btn" id="pupSave" type="submit">Save puppy</button></div>
+        <div><button class="btn ghost" id="pupCancelEdit" type="button" style="display:none">Cancel edit</button></div>
+      </form>
+      <div class="msg" id="pupMsg"></div>
+      <p class="muted">Balance due is automatic: price − deposit − balance paid. "Extra costs" are costs that belong to this one puppy (an extra vet check, a flight nanny) — they count on top of its share of the litter's costs.</p>
+    </div>
+    <div class="panel">
+      <h2>Puppies</h2>
+      <div class="rowflex" style="margin-bottom:8px">
+        <div style="min-width:220px"><label for="pupFilter">Show puppies from</label><select id="pupFilter"></select></div>
+      </div>
+      <div id="pupList"></div>
+    </div>
+    <div class="panel">
+      <h2>Weight log</h2>
+      <form class="grid" id="wtForm">
+        <div><label for="wtPup">Puppy</label><select id="wtPup"></select></div>
+        <div><label for="wtDate">Date</label><input type="date" id="wtDate"></div>
+        <div><label for="wtOz">Weight (oz)</label><input inputmode="decimal" type="number" id="wtOz" step="0.1" min="0" placeholder="0"></div>
+        <div><button class="btn" id="wtSave" type="submit">Add weight</button></div>
+      </form>
+      <div class="msg" id="wtMsg"></div>
+      <div id="wtList" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <!-- ============ MONEY ============ -->
+  <section class="tab" id="tab-money">
+    <div class="panel">
+      <h2>Money by litter</h2>
+      <table><thead><tr><th>Litter</th><th class="num">Costs</th><th class="num">Cost / puppy</th><th class="num">Break-even price</th><th class="num">Collected</th><th class="num">Still owed</th><th class="num">Gross margin</th></tr></thead>
+      <tbody id="moneyLitters"></tbody>
+      <tfoot><tr class="total"><td>All litters</td><td class="num" id="moneyTotCosts">$0.00</td><td class="num">—</td><td class="num">—</td><td class="num" id="moneyTotCollected">$0.00</td><td class="num" id="moneyTotOwed">$0.00</td><td class="num" id="moneyTotMargin">$0.00</td></tr></tfoot></table>
+      <p class="muted">Gross margin = money collected so far − litter costs. It improves as balances are paid; it is not the same as profit on paper until every balance lands. Cost per puppy and break-even price = total litter costs ÷ puppies born alive (see Help).</p>
+      <div class="rowflex" style="margin-top:10px">
+        <button class="btn ghost" id="btnPrintMoney" type="button">Print money summary</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Outstanding balances — who owes what</h2>
+      <table><thead><tr><th>Puppy</th><th>Litter</th><th>Buyer</th><th>Contact</th><th>Status</th><th class="num">Price</th><th class="num">Collected</th><th class="num">Still owed</th></tr></thead>
+      <tbody id="moneyOwed"></tbody></table>
+    </div>
+  </section>
+
+  <!-- ============ WAITLIST ============ -->
+  <section class="tab" id="tab-waitlist">
+    <div class="panel">
+      <h2 id="wlFormTitle">Add to the waitlist</h2>
+      <form class="grid" id="wlForm">
+        <div><label for="wlName">Name *</label><input type="text" id="wlName"></div>
+        <div><label for="wlContact">Contact (stored on this device only)</label><input type="text" id="wlContact"></div>
+        <div><label for="wlDate">Date added</label><input type="date" id="wlDate"></div>
+        <div><label for="wlDepStatus">Deposit status</label>
+          <select id="wlDepStatus"><option value="none">No deposit</option><option value="paid">Deposit paid</option><option value="promised">Deposit promised</option></select></div>
+        <div><label for="wlDepAmt">Deposit amount ($)</label><input inputmode="decimal" type="number" id="wlDepAmt" step="0.01" min="0" placeholder="0.00"></div>
+        <div style="grid-column:span 2"><label for="wlPrefs">Preferences / notes</label><input type="text" id="wlPrefs" placeholder="e.g. Female, darker gold, spring litter"></div>
+        <div><button class="btn" id="wlSave" type="submit">Save</button></div>
+        <div><button class="btn ghost" id="wlCancelEdit" type="button" style="display:none">Cancel edit</button></div>
+      </form>
+      <div class="msg" id="wlMsg"></div>
+    </div>
+    <div class="panel">
+      <h2>Waitlist</h2>
+      <div class="rowflex" style="margin-bottom:8px">
+        <div style="min-width:220px"><label for="wlSearch">Search name, contact, or preferences</label><input type="text" id="wlSearch" placeholder="Search…"></div>
+        <span class="spacer"></span><span class="muted" id="wlCount"></span>
+      </div>
+      <table><thead><tr><th>Added</th><th>Name</th><th>Contact</th><th>Preferences</th><th>Deposit</th><th></th></tr></thead>
+      <tbody id="wlList"></tbody></table>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS & BACKUP ============ -->
+  <section class="tab" id="tab-settings">
+    <div class="panel">
+      <h2>Kennel settings</h2>
+      <form class="grid" id="setForm">
+        <div><label for="setKennel">Kennel name</label><input type="text" id="setKennel" placeholder="Your kennel name"></div>
+        <div><label for="setOwner">Your name</label><input type="text" id="setOwner" placeholder="Your name"></div>
+        <div><label for="setGest">Gestation estimate (days from mating to whelp)</label><input inputmode="decimal" type="number" id="setGest" step="1" min="1" max="200"></div>
+        <div><button class="btn" id="setSave" type="submit">Save settings</button></div>
+      </form>
+      <div class="msg" id="setMsg"></div>
+      <p class="muted">The gestation figure (standard default 63 days) is used only to show an <i>expected</i> whelp date for planning. It is an estimate, not a veterinary prediction — actual whelping dates vary.</p>
+    </div>
+    <div class="panel">
+      <h2>Backup &amp; restore</h2>
+      <p class="muted">Your data lives only in this browser on this device. Export a backup file regularly — it's the only copy. Importing a backup replaces everything currently in the app with the backup's contents.</p>
+      <div class="rowflex">
+        <button class="btn" id="btnExport" type="button">Export backup (JSON)</button>
+        <label class="btn ghost" style="cursor:pointer">Import from file<input type="file" id="importFile" accept=".json,application/json" style="display:none"></label>
+      </div>
+      <label for="importText" style="margin-top:12px">…or paste backup JSON here</label>
+      <textarea id="importText" placeholder="Paste the contents of a LitterLedger backup file"></textarea>
+      <div class="rowflex" style="margin-top:8px">
+        <button class="btn ghost" id="btnImportText" type="button">Import pasted backup</button>
+        <span class="msg" id="importMsg"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Sample data &amp; erase</h2>
+      <div class="rowflex">
+        <button class="btn ghost" id="btnClearDemo" type="button">Clear sample data only</button>
+        <button class="btn danger" id="btnEraseAll" type="button">Erase EVERYTHING</button>
+        <span class="msg" id="dataMsg"></span>
+      </div>
+      <p class="muted">"Erase EVERYTHING" deletes all records and settings from this browser and starts the app empty. It cannot be undone — export a backup first if there's anything you want.</p>
+    </div>
+  <div id="legalSection"></div>
+</section>
+
+  <!-- ============ HELP ============ -->
+  <section class="tab" id="tab-help">
+    <div class="panel">
+      <h2>How LitterLedger works</h2>
+      <h3>The idea</h3>
+      <p>One file, no account, no subscription — your kennel records never leave this device. Dogs first, then litters and their costs, then a record for every puppy: what it weighed, what it sold for, what's been paid, and who still owes you. At any moment the Money tab shows your true cost per puppy and the price below which a litter loses money.</p>
+      <h3>Formulas used</h3>
+      <p><b>Cost per puppy</b> = the litter's total recorded costs ÷ puppies born alive in that litter. If a litter has no live-born count entered yet, the number of puppy records is used instead; if there are no puppies at all, cost per puppy shows $0 rather than a made-up number.</p>
+      <p><b>Break-even price per puppy</b> = the same figure: the sale price at which one puppy's price exactly covers its share of the litter's costs. A puppy's <i>own</i> extra costs (entered on the puppy) come on top of its share — the Puppies tab shows each puppy's total cost (share + extras).</p>
+      <p><b>Collected</b> per puppy = deposit received + balance paid so far. <b>Balance due</b> = sale price − collected. Only puppies marked Reserved or Placed appear on the outstanding-balances list — an Available puppy has no buyer yet, so nobody owes you anything for it.</p>
+      <p><b>Gross margin per litter</b> = collected so far − total litter costs. Puppies you keep aren't sales; their price fields are ignored in the money totals unless you enter amounts on them.</p>
+      <p><b>Expected whelp date</b> = mating date + the gestation-days setting (default 63). It is a planning estimate only.</p>
+      <h3>Your data</h3>
+      <p>Everything is stored in this browser's local storage on this device only — including buyer names and contacts, which is why they never leave it. Clearing your browser's site data erases it — export backups from Settings &amp; Backup and keep the file somewhere safe. A backup from this app can be re-imported into any copy of LitterLedger.</p>
+      <div class="disclaimer"><b>Record-keeping only.</b> LitterLedger is a notebook and calculator. It is not veterinary, medical, legal, or tax advice, and it makes no prediction or guarantee about breeding outcomes, puppy health, or prices. Health-testing entries are your own records of results you were given. For animal health questions, ask your veterinarian; for taxes and contracts, ask the relevant professional.</div>
+    </div>
+  </section>
+</main>
+<div id="printSheet"></div>
+
+<script>
+"use strict";
+/* ================= LitterLedger ================= */
+var KEY = "litterledger.v1";
+var COSTCATS = { stud:"Stud fee", vet:"Vet visits", food:"Food", supplies:"Supplies", registration:"Registration", advertising:"Advertising", other:"Other" };
+var PUPSTATUS = { available:"Available", reserved:"Reserved", placed:"Placed", kept:"Kept", deceased:"Deceased" };
+var DOGSTATUS = { active:"Active", resting:"Resting", retired:"Retired" };
+
+var _uid = 0;
+function uid(){ _uid++; return "r"+Date.now().toString(36)+_uid.toString(36)+Math.floor(Math.random()*1e6).toString(36); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]; }); }
+function round2(x){ return Math.round((Number(x)||0)*100)/100; }
+function fmt(x){ var v = round2(x); var neg = v<0; var s = Math.abs(v).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2}); return (neg?"-$":"$")+s; }
+function num(v){ var n = parseFloat(v); if(!isFinite(n)) return 0; if(n>999999999) n=999999999; if(n<-999999999) n=-999999999; return n; }
+function amt(v){ var n = num(v); return n<0?0:n; }
+function count(v){ var n = Math.floor(Math.abs(num(v))); return n>100000?100000:n; }
+function validDate(s){
+  if(typeof s!=="string") return false;
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s); if(!m) return false;
+  var y=+m[1], mo=+m[2], d=+m[3];
+  if(mo<1||mo>12||d<1||d>31) return false;
+  var dt = new Date(Date.UTC(y, mo-1, d));
+  return dt.getUTCFullYear()===y && dt.getUTCMonth()===mo-1 && dt.getUTCDate()===d;
+}
+function optDate(s){ return validDate(s) ? s : ""; }
+function todayStr(){ var d=new Date(); function p(n){return (n<10?"0":"")+n;} return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+function addDays(dateStr, n){
+  var y=+dateStr.slice(0,4), mo=+dateStr.slice(5,7), d=+dateStr.slice(8,10);
+  var dt = new Date(Date.UTC(y, mo-1, d + n));
+  function p(x){return (x<10?"0":"")+x;}
+  return dt.getUTCFullYear()+"-"+p(dt.getUTCMonth()+1)+"-"+p(dt.getUTCDate());
+}
+function daysBetween(a, b){ /* b - a in whole days, both valid */
+  var pa = Date.UTC(+a.slice(0,4), +a.slice(5,7)-1, +a.slice(8,10));
+  var pb = Date.UTC(+b.slice(0,4), +b.slice(5,7)-1, +b.slice(8,10));
+  return Math.round((pb - pa)/86400000);
+}
+
+function defaultSettings(){ return { kennelName:"", ownerName:"", gestationDays:63 }; }
+function blankState(){
+  return { app:"litterledger", version:1, settings: defaultSettings(), dogs:[], litters:[], puppies:[], costs:[], waitlist:[], meta:{seeded:true, demoCleared:false} };
+}
+function seedDemo(){
+  var st = blankState();
+  st.settings.kennelName = "Sample — Sunny Acres Kennels (demo)";
+  st.settings.ownerName = "Demo Breeder";
+  var daisy = uid(), duke = uid(), willow = uid(), molly = uid();
+  st.dogs.push({id:daisy, name:"Daisy", role:"Dam", breed:"Golden Retriever", dob:"2022-04-10", reg:"AKC reg. (sample)", health:["OFA hips — Good","Eye exam — clear 2025"], status:"active", notes:"", demo:true});
+  st.dogs.push({id:duke, name:"Duke", role:"Sire", breed:"Golden Retriever", dob:"2021-06-15", reg:"AKC reg. (sample)", health:["OFA hips — Excellent","Heart — clear 2025"], status:"active", notes:"Outside stud", demo:true});
+  st.dogs.push({id:willow, name:"Willow", role:"Dam", breed:"Golden Retriever", dob:"2023-02-05", reg:"AKC reg. (sample)", health:["OFA hips — Good"], status:"active", notes:"", demo:true});
+  st.dogs.push({id:molly, name:"Molly", role:"Dam", breed:"Golden Retriever", dob:"2019-09-01", reg:"AKC reg. (sample)", health:[], status:"retired", notes:"Retired after three litters", demo:true});
+  var l1 = uid(), l2 = uid();
+  st.litters.push({id:l1, damId:daisy, sireId:duke, matingDate:"2026-06-23", whelpDate:"2026-08-25", bornLive:4, bornStill:1, notes:"Whelped through the night, all four doing well", demo:true});
+  st.litters.push({id:l2, damId:willow, sireId:duke, matingDate:"2026-10-10", whelpDate:"", bornLive:0, bornStill:0, notes:"Expected around mid-December", demo:true});
+  function W(list){ return list.map(function(r){ return {date:r[0], oz:r[1]}; }); }
+  st.puppies.push({id:uid(), litterId:l1, name:"Clover", sex:"F", color:"Light gold", birthWt:11, weights:W([["2026-08-25",11],["2026-09-01",18],["2026-09-08",26]]), status:"placed", deceasedDate:"", price:1500, deposit:300, balancePaid:1200, extraCost:0, buyerName:"Jamie P.", buyerContact:"555-0101 (sample)", placementDate:"2026-10-24", notes:"", demo:true});
+  st.puppies.push({id:uid(), litterId:l1, name:"Rusty", sex:"M", color:"Dark gold", birthWt:12.5, weights:W([["2026-08-25",12.5],["2026-09-01",20],["2026-09-08",29]]), status:"placed", deceasedDate:"", price:1500, deposit:300, balancePaid:900, extraCost:75, buyerName:"Casey R.", buyerContact:"555-0102 (sample)", placementDate:"2026-10-25", notes:"Extra vet check before placement", demo:true});
+  st.puppies.push({id:uid(), litterId:l1, name:"Poppy", sex:"F", color:"Medium gold", birthWt:10.5, weights:W([["2026-08-25",10.5],["2026-09-01",17]]), status:"reserved", deceasedDate:"", price:1500, deposit:300, balancePaid:0, extraCost:0, buyerName:"Jordan T.", buyerContact:"555-0103 (sample)", placementDate:"", notes:"Picking up next weekend", demo:true});
+  st.puppies.push({id:uid(), litterId:l1, name:"Sage", sex:"F", color:"Light gold, white chest spot", birthWt:11.5, weights:W([["2026-08-25",11.5],["2026-09-01",18.5]]), status:"available", deceasedDate:"", price:1500, deposit:0, balancePaid:0, extraCost:0, buyerName:"", buyerContact:"", placementDate:"", notes:"", demo:true});
+  var costs = [
+    ["2026-06-23","stud",600,"Duke, outside stud"],
+    ["2026-08-26","vet",240,"Post-whelp check for Daisy + litter exam"],
+    ["2026-09-05","supplies",95,"Whelping pads, scale batteries, cleaning"],
+    ["2026-09-20","food",180,"Puppy food + Daisy's food top-up"],
+    ["2026-10-02","registration",60,"Litter registration"],
+    ["2026-10-10","advertising",45,"Listing boost"]
+  ];
+  costs.forEach(function(r){ st.costs.push({id:uid(), litterId:l1, date:r[0], cat:r[1], amount:r[2], notes:r[3], demo:true}); });
+  st.waitlist.push({id:uid(), name:"Alex M.", contact:"555-0111 (sample)", prefs:"Female, darker gold, spring litter", depStatus:"paid", depAmt:200, dateAdded:"2026-10-05", notes:"", demo:true});
+  st.waitlist.push({id:uid(), name:"Sam T.", contact:"555-0112 (sample)", prefs:"Male, any color", depStatus:"none", depAmt:0, dateAdded:"2026-10-18", notes:"First-time dog owner", demo:true});
+  return st;
+}
+
+var state = null;
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function load(){
+  var raw = null;
+  try{ raw = localStorage.getItem(KEY); }catch(e){}
+  if(!raw){ state = seedDemo(); save(); return; }
+  try{
+    var parsed = JSON.parse(raw);
+    state = sanitizeState(parsed);
+    if(!state){ throw new Error("bad shape"); }
+  }catch(e){
+    try{ localStorage.setItem(KEY+".corrupt", raw); }catch(e2){}
+    state = seedDemo(); save();
+  }
+}
+function sanitizeState(p){
+  if(!p || typeof p!=="object") return null;
+  var st = blankState();
+  var s = (p.settings && typeof p.settings==="object") ? p.settings : {};
+  st.settings.kennelName = String(s.kennelName||"").slice(0,120);
+  st.settings.ownerName = String(s.ownerName||"").slice(0,120);
+  var g = Math.floor(num(s.gestationDays==null?63:s.gestationDays));
+  st.settings.gestationDays = (g>=1 && g<=200) ? g : 63;
+  st.dogs = sanitizeDogs(p.dogs);
+  var dogIds = {}; st.dogs.forEach(function(d){ dogIds[d.id]=true; });
+  st.litters = sanitizeLitters(p.litters, dogIds);
+  var litterIds = {}; st.litters.forEach(function(l){ litterIds[l.id]=true; });
+  st.puppies = sanitizePuppies(p.puppies, litterIds);
+  st.costs = sanitizeCosts(p.costs, litterIds);
+  st.waitlist = sanitizeWaitlist(p.waitlist);
+  st.meta = { seeded:true, demoCleared: !!(p.meta && p.meta.demoCleared) };
+  st.legal = sanitizeLegal(p.legal);
+  return st;
+}
+function sanitizeDogs(list){
+  if(!Array.isArray(list)) return [];
+  var out=[];
+  list.forEach(function(r){
+    if(!r || typeof r!=="object") return;
+    var health = [];
+    if(Array.isArray(r.health)) r.health.forEach(function(h){ var t = String(h||"").trim().slice(0,200); if(t) health.push(t); });
+    out.push({
+      id: String(r.id||uid()), name: String(r.name||"").slice(0,120) || "Unnamed dog",
+      role: r.role==="Sire" ? "Sire" : "Dam",
+      breed: String(r.breed||"").slice(0,120), dob: optDate(r.dob),
+      reg: String(r.reg||"").slice(0,300),
+      health: health,
+      status: DOGSTATUS[r.status] ? r.status : "active",
+      notes: String(r.notes||"").slice(0,300), demo: !!r.demo
+    });
+  });
+  return out;
+}
+function sanitizeLitters(list, dogIds){
+  if(!Array.isArray(list)) return [];
+  var out=[];
+  list.forEach(function(r){
+    if(!r || typeof r!=="object") return;
+    out.push({
+      id: String(r.id||uid()),
+      damId: dogIds[r.damId] ? r.damId : "",
+      sireId: dogIds[r.sireId] ? r.sireId : "",
+      matingDate: optDate(r.matingDate), whelpDate: optDate(r.whelpDate),
+      bornLive: count(r.bornLive), bornStill: count(r.bornStill),
+      notes: String(r.notes||"").slice(0,300), demo: !!r.demo
+    });
+  });
+  return out;
+}
+function sanitizePuppies(list, litterIds){
+  if(!Array.isArray(list)) return [];
+  var out=[];
+  list.forEach(function(r){
+    if(!r || typeof r!=="object" || !litterIds[r.litterId]) return;
+    var weights = [];
+    if(Array.isArray(r.weights)) r.weights.forEach(function(w){
+      if(w && validDate(w.date)) weights.push({ date:w.date, oz: Math.round(amt(w.oz)*10)/10 });
+    });
+    weights.sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
+    out.push({
+      id: String(r.id||uid()), litterId: r.litterId,
+      name: String(r.name||"").slice(0,120) || "Unnamed puppy",
+      sex: r.sex==="M" ? "M" : "F",
+      color: String(r.color||"").slice(0,120),
+      birthWt: Math.round(amt(r.birthWt)*10)/10,
+      weights: weights,
+      status: PUPSTATUS[r.status] ? r.status : "available",
+      deceasedDate: optDate(r.deceasedDate),
+      price: amt(r.price), deposit: amt(r.deposit), balancePaid: amt(r.balancePaid), extraCost: amt(r.extraCost),
+      buyerName: String(r.buyerName||"").slice(0,120), buyerContact: String(r.buyerContact||"").slice(0,160),
+      placementDate: optDate(r.placementDate),
+      notes: String(r.notes||"").slice(0,300), demo: !!r.demo
+    });
+  });
+  return out;
+}
+function sanitizeCosts(list, litterIds){
+  if(!Array.isArray(list)) return [];
+  var out=[];
+  list.forEach(function(r){
+    if(!r || typeof r!=="object" || !litterIds[r.litterId] || !validDate(r.date)) return;
+    out.push({
+      id: String(r.id||uid()), litterId: r.litterId, date: r.date,
+      cat: COSTCATS[r.cat] ? r.cat : "other",
+      amount: amt(r.amount), notes: String(r.notes||"").slice(0,300), demo: !!r.demo
+    });
+  });
+  return out;
+}
+function sanitizeWaitlist(list){
+  if(!Array.isArray(list)) return [];
+  var out=[];
+  list.forEach(function(r){
+    if(!r || typeof r!=="object") return;
+    out.push({
+      id: String(r.id||uid()), name: String(r.name||"").slice(0,120) || "Unnamed",
+      contact: String(r.contact||"").slice(0,160), prefs: String(r.prefs||"").slice(0,300),
+      depStatus: ["none","paid","promised"].indexOf(r.depStatus)>=0 ? r.depStatus : "none",
+      depAmt: amt(r.depAmt), dateAdded: optDate(r.dateAdded),
+      notes: String(r.notes||"").slice(0,300), demo: !!r.demo
+    });
+  });
+  return out;
+}
+
+/* ---------- lookups & computations ---------- */
+function dogById(id){ for(var i=0;i<state.dogs.length;i++) if(state.dogs[i].id===id) return state.dogs[i]; return null; }
+function litterById(id){ for(var i=0;i<state.litters.length;i++) if(state.litters[i].id===id) return state.litters[i]; return null; }
+function puppyById(id){ for(var i=0;i<state.puppies.length;i++) if(state.puppies[i].id===id) return state.puppies[i]; return null; }
+function litterLabel(l){
+  var dam = l.damId ? dogById(l.damId) : null, sire = l.sireId ? dogById(l.sireId) : null;
+  var dn = dam ? dam.name : "?", sn = sire ? sire.name : "?";
+  var when = l.whelpDate ? ("whelped "+l.whelpDate) : (l.matingDate ? ("mated "+l.matingDate) : "no dates");
+  return dn+" × "+sn+" ("+when+")";
+}
+function puppiesOf(litterId){ return state.puppies.filter(function(p){ return p.litterId===litterId; }); }
+function litterCosts(litterId){
+  var t = 0;
+  state.costs.forEach(function(c){ if(c.litterId===litterId) t = round2(t + c.amount); });
+  return t;
+}
+function puppyCollected(p){ return round2(p.deposit + p.balancePaid); }
+function puppyOwed(p){
+  if(p.status!=="reserved" && p.status!=="placed") return 0;
+  var o = round2(p.price - puppyCollected(p));
+  return o>0 ? o : 0;
+}
+function litterStats(l){
+  var pups = puppiesOf(l.id);
+  var costs = litterCosts(l.id);
+  var denom = l.bornLive>0 ? l.bornLive : pups.length;
+  var cpp = denom>0 ? round2(costs/denom) : 0;
+  var collected = 0, owed = 0;
+  pups.forEach(function(p){ collected = round2(collected + puppyCollected(p)); owed = round2(owed + puppyOwed(p)); });
+  return { pups:pups, costs:costs, denom:denom, costPerPuppy:cpp, breakEven:cpp, collected:collected, owed:owed, margin:round2(collected - costs) };
+}
+function allOwed(){
+  var rows = [];
+  state.puppies.forEach(function(p){
+    var o = puppyOwed(p);
+    if(o>0) rows.push({ puppy:p, litter:litterById(p.litterId), owed:o });
+  });
+  rows.sort(function(a,b){ return b.owed - a.owed; });
+  return rows;
+}
+function expectedWhelp(l){
+  if(!l || l.whelpDate || !validDate(l.matingDate)) return "";
+  return addDays(l.matingDate, state.settings.gestationDays);
+}
+function nextExpectedWhelp(){
+  var best = null;
+  state.litters.forEach(function(l){
+    var e = expectedWhelp(l);
+    if(e && (!best || e < best.date)) best = { date:e, litter:l };
+  });
+  return best;
+}
+function isActiveLitter(l){
+  return puppiesOf(l.id).some(function(p){ return p.status==="available" || p.status==="reserved"; });
+}
+function latestWeight(p){
+  if(!p.weights.length) return p.birthWt>0 ? { date:"", oz:p.birthWt } : null;
+  return p.weights[p.weights.length-1];
+}
+
+/* ---------- UI ---------- */
+function $(id){ return document.getElementById(id); }
+var editDogId = null, editLitterId = null, editPupId = null, editWlId = null;
+function showTab(name){
+  Array.prototype.forEach.call(document.querySelectorAll("#tabBar button"), function(b){ b.classList.toggle("active", b.getAttribute("data-tab")===name); });
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(s){ s.classList.toggle("active", s.id==="tab-"+name); });
+}
+function setMsg(id, text, ok){ var el=$(id); if(!el) return; el.textContent = text||""; el.className = "msg "+(text?(ok?"ok":"err"):""); }
+function flagFor(status){
+  if(status==="placed") return '<span class="flag good">Placed</span>';
+  if(status==="reserved") return '<span class="flag due">Reserved</span>';
+  if(status==="available") return '<span class="flag">Available</span>';
+  if(status==="kept") return '<span class="flag">Kept</span>';
+  return '<span class="flag over">Deceased</span>';
+}
+function fillDogSelects(){
+  var dams = state.dogs.filter(function(d){ return d.role==="Dam"; });
+  var sires = state.dogs.filter(function(d){ return d.role==="Sire"; });
+  $("litDam").innerHTML = dams.length ? dams.map(function(d){ return '<option value="'+esc(d.id)+'">'+esc(d.name)+'</option>'; }).join("") : '<option value="">— add a dam first —</option>';
+  $("litSire").innerHTML = sires.length ? sires.map(function(d){ return '<option value="'+esc(d.id)+'">'+esc(d.name)+'</option>'; }).join("") : '<option value="">— add a sire first —</option>';
+}
+function litterOptions(sel, includeAll){
+  var opts = includeAll ? '<option value="">All litters</option>' : "";
+  opts += state.litters.map(function(l){ return '<option value="'+esc(l.id)+'"'+(sel===l.id?' selected':"")+'>'+esc(litterLabel(l))+'</option>'; }).join("");
+  return opts;
+}
+function fillLitterSelects(){
+  var cur = $("pupLitter").value, curCost = $("costLitter").value, curFilter = $("pupFilter").value, curCostFilter = $("costFilter").value, curWt = $("wtPup").value;
+  $("pupLitter").innerHTML = litterOptions(cur, false) || '<option value="">— add a litter first —</option>';
+  $("costLitter").innerHTML = litterOptions(curCost, false) || '<option value="">— add a litter first —</option>';
+  $("pupFilter").innerHTML = litterOptions(curFilter, true);
+  $("costFilter").innerHTML = litterOptions(curCostFilter, true);
+  var pupOpts = state.puppies.map(function(p){ var l = litterById(p.litterId); return '<option value="'+esc(p.id)+'">'+esc(p.name)+(l?' ('+esc(litterLabel(l))+')':"")+'</option>'; }).join("");
+  $("wtPup").innerHTML = pupOpts || '<option value="">— add a puppy first —</option>';
+  if(curWt && puppyById(curWt)) $("wtPup").value = curWt;
+}
+function render(){
+  fillDogSelects(); fillLitterSelects();
+  renderDashboard(); renderDogs(); renderLitters(); renderCosts(); renderPuppies(); renderWeights(); renderMoney(); renderWaitlist(); renderSettings();
+}
+function renderDashboard(){
+  var active = state.litters.filter(isActiveLitter);
+  $("dashLitters").textContent = active.length;
+  var planned = state.litters.filter(function(l){ return !l.whelpDate; }).length;
+  $("dashLittersNote").textContent = planned ? (planned+" planned (not yet whelped)") : "Litters with available or reserved puppies";
+  var avail = state.puppies.filter(function(p){ return p.status==="available"; });
+  $("dashAvail").textContent = avail.length;
+  var reserved = state.puppies.filter(function(p){ return p.status==="reserved"; }).length;
+  $("dashAvailNote").textContent = reserved+" reserved · "+state.puppies.filter(function(p){ return p.status==="placed"; }).length+" placed";
+  var owedRows = allOwed();
+  var owedTotal = 0; owedRows.forEach(function(r){ owedTotal = round2(owedTotal + r.owed); });
+  $("dashOwed").textContent = fmt(owedTotal);
+  var nx = nextExpectedWhelp();
+  if(nx){ $("dashWhelp").textContent = nx.date; $("dashWhelpNote").textContent = litterLabel(nx.litter)+" · planning estimate ("+state.settings.gestationDays+" days), not a veterinary prediction"; }
+  else { $("dashWhelp").textContent = "—"; $("dashWhelpNote").textContent = "Add a mating date on a litter to see an expected whelp estimate"; }
+  $("dashOwedList").innerHTML = owedRows.length ? owedRows.map(function(r){
+    return "<tr><td>"+esc(r.puppy.name)+(r.puppy.demo?' <span class="flag">sample</span>':"")+"</td><td>"+esc(r.litter?litterLabel(r.litter):"")+"</td><td>"+esc(r.puppy.buyerName||"—")+"</td><td>"+esc(PUPSTATUS[r.puppy.status])+"</td><td class=\"num\">"+fmt(r.owed)+"</td></tr>";
+  }).join("") : '<tr><td colspan="5" class="muted">Nothing outstanding — every reserved/placed puppy is paid up.</td></tr>';
+}
+function renderDogs(){
+  $("dogList").innerHTML = state.dogs.length ? state.dogs.map(function(d){
+    var age = validDate(d.dob) ? "" : "";
+    var health = d.health.length ? d.health.map(function(h){ return "<li>"+esc(h)+"</li>"; }).join("") : "<li class='muted'>No health entries recorded</li>";
+    return '<div style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px">'
+      + '<div class="rowflex"><b>'+esc(d.name)+'</b> <span class="flag">'+esc(d.role)+'</span> <span class="flag'+(d.status==="active"?" good":(d.status==="retired"?" over":" due"))+'">'+esc(DOGSTATUS[d.status])+'</span>'
+      + (d.demo?' <span class="flag">sample</span>':"")
+      + '<span class="spacer"></span><button class="btn small ghost" data-edit-dog="'+esc(d.id)+'" type="button">Edit</button> <button class="btn small danger" data-del-dog="'+esc(d.id)+'" type="button">Delete</button></div>'
+      + '<div class="muted">'+esc(d.breed||"Breed not recorded")+(d.dob?" · born "+esc(d.dob):"")+(d.reg?" · "+esc(d.reg):"")+'</div>'
+      + '<div style="margin-top:6px"><b style="font-size:13px">Health-testing checklist (your records):</b><ul style="margin:4px 0 0 18px;padding:0;font-size:13.5px">'+health+'</ul></div>'
+      + (d.notes?'<div class="muted" style="margin-top:4px">'+esc(d.notes)+'</div>':"")
+      + '</div>';
+  }).join("") : '<p class="muted">No dogs yet — add your first dam or sire above.</p>';
+}
+function renderLitters(){
+  var note = $("litExpectNote");
+  var nx = nextExpectedWhelp();
+  note.textContent = nx ? ("Next expected whelp: "+litterLabel(nx.litter)+" around "+nx.date+" (mating + "+state.settings.gestationDays+" days — a planning estimate, not a veterinary prediction).") : "";
+  $("litterList").innerHTML = state.litters.length ? state.litters.map(function(l){
+    var s = litterStats(l);
+    var exp = expectedWhelp(l);
+    return '<div style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px">'
+      + '<div class="rowflex"><b>'+esc(litterLabel(l))+'</b>'+(l.demo?' <span class="flag">sample</span>':"")
+      + '<span class="spacer"></span><button class="btn small ghost" data-edit-litter="'+esc(l.id)+'" type="button">Edit</button> <button class="btn small danger" data-del-litter="'+esc(l.id)+'" type="button">Delete</button></div>'
+      + '<div class="muted">'
+      + (l.matingDate?"Mated "+esc(l.matingDate)+" · ":"")
+      + (l.whelpDate?("Whelped "+esc(l.whelpDate)+" · Born alive "+l.bornLive+" · Stillborn "+l.bornStill):(exp?("Expected whelp ≈ "+exp+" (estimate)"):"Not yet whelped"))
+      + '</div>'
+      + '<div style="font-size:13.5px;margin-top:4px">Puppy records: '+s.pups.length+' · Costs: '+fmt(s.costs)+' · Cost/puppy: '+fmt(s.costPerPuppy)+' · Collected: '+fmt(s.collected)+' · Owed: '+fmt(s.owed)+' · Margin: '+fmt(s.margin)+'</div>'
+      + (l.notes?'<div class="muted" style="margin-top:2px">'+esc(l.notes)+'</div>':"")
+      + '</div>';
+  }).join("") : '<p class="muted">No litters yet.</p>';
+}
+function renderCosts(){
+  var f = $("costFilter").value;
+  var rows = state.costs.filter(function(c){ return !f || c.litterId===f; }).slice().sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
+  var total = 0; rows.forEach(function(c){ total = round2(total + c.amount); });
+  $("costListTitle").textContent = f ? litterLabel(litterById(f)||{damId:"",sireId:"",whelpDate:"",matingDate:""}) : "all litters";
+  $("costTotalLine").textContent = "Total shown: "+fmt(total);
+  $("costList").innerHTML = rows.length ? rows.map(function(c){
+    var l = litterById(c.litterId);
+    return "<tr><td>"+esc(c.date)+"</td><td>"+esc(l?litterLabel(l):"")+"</td><td>"+esc(COSTCATS[c.cat])+"</td><td>"+esc(c.notes)+(c.demo?' <span class="flag">sample</span>':"")+"</td><td class=\"num\">"+fmt(c.amount)+"</td><td><button class=\"btn small ghost\" data-del-cost=\""+esc(c.id)+"\" type=\"button\">Delete</button></td></tr>";
+  }).join("") : '<tr><td colspan="6" class="muted">No costs recorded for this view yet.</td></tr>';
+}
+function renderPuppies(){
+  var f = $("pupFilter").value;
+  var rows = state.puppies.filter(function(p){ return !f || p.litterId===f; });
+  $("pupList").innerHTML = rows.length ? rows.map(function(p){
+    var l = litterById(p.litterId);
+    var s = l ? litterStats(l) : { costPerPuppy:0 };
+    var lw = latestWeight(p);
+    var totalCost = round2(s.costPerPuppy + p.extraCost);
+    return '<div style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px">'
+      + '<div class="rowflex"><b>'+esc(p.name)+'</b> <span class="flag">'+(p.sex==="M"?"Male":"Female")+'</span> '+flagFor(p.status)
+      + (p.demo?' <span class="flag">sample</span>':"")
+      + '<span class="spacer"></span><button class="btn small ghost" data-edit-pup="'+esc(p.id)+'" type="button">Edit</button> <button class="btn small danger" data-del-pup="'+esc(p.id)+'" type="button">Delete</button></div>'
+      + '<div class="muted">'+esc(l?litterLabel(l):"")+(p.color?" · "+esc(p.color):"")+(p.birthWt?" · birth "+p.birthWt+" oz":"")+(lw?(" · latest weight "+lw.oz+" oz"+(lw.date?" ("+esc(lw.date)+")":"")):"")+'</div>'
+      + '<div style="font-size:13.5px;margin-top:4px">Price: '+fmt(p.price)+' · Collected: '+fmt(puppyCollected(p))+' · Balance due: '+fmt(puppyOwed(p))+(p.status==="available"||p.status==="kept"||p.status==="deceased" ? ' <span class="muted">(not on the owed list until reserved/placed)</span>' : "")
+      + ' · Cost: '+fmt(totalCost)+' (litter share '+fmt(s.costPerPuppy)+(p.extraCost?' + extras '+fmt(p.extraCost):"")+')</div>'
+      + (p.buyerName?'<div class="muted" style="margin-top:2px">Buyer: '+esc(p.buyerName)+(p.buyerContact?" · "+esc(p.buyerContact):"")+(p.placementDate?" · placed "+esc(p.placementDate):"")+'</div>':"")
+      + (p.status==="deceased" && p.deceasedDate?'<div class="muted" style="margin-top:2px">Deceased: '+esc(p.deceasedDate)+'</div>':"")
+      + (p.notes?'<div class="muted" style="margin-top:2px">'+esc(p.notes)+'</div>':"")
+      + '</div>';
+  }).join("") : '<p class="muted">No puppies in this view yet.</p>';
+}
+function renderWeights(){
+  var id = $("wtPup").value;
+  var p = id ? puppyById(id) : null;
+  if(!p){ $("wtList").innerHTML = '<p class="muted">Add a puppy to start its weight log.</p>'; return; }
+  var rows = p.weights.map(function(w, i){
+    var prev = i===0 ? (p.birthWt>0 ? p.birthWt : null) : p.weights[i-1].oz;
+    var gain = prev==null ? "" : ((Math.round((w.oz-prev)*10)/10>=0?"+":"")+(Math.round((w.oz-prev)*10)/10)+" oz");
+    return "<tr><td>"+esc(w.date)+"</td><td class=\"num\">"+w.oz+" oz</td><td class=\"num\">"+gain+"</td><td><button class=\"btn small ghost\" data-del-wt=\""+i+"\" type=\"button\">Delete</button></td></tr>";
+  }).join("");
+  $("wtList").innerHTML = "<p style='margin:4px 0'><b>"+esc(p.name)+"</b> — birth weight "+(p.birthWt?p.birthWt+" oz":"not recorded")+"</p>"
+    + (rows ? "<table><thead><tr><th>Date</th><th class=\"num\">Weight</th><th class=\"num\">Change</th><th></th></tr></thead><tbody>"+rows+"</tbody></table>" : '<p class="muted">No weight entries yet — add the first one above.</p>');
+}
+function renderMoney(){
+  var totC=0, totCol=0, totO=0, totM=0;
+  $("moneyLitters").innerHTML = state.litters.length ? state.litters.map(function(l){
+    var s = litterStats(l);
+    totC=round2(totC+s.costs); totCol=round2(totCol+s.collected); totO=round2(totO+s.owed); totM=round2(totM+s.margin);
+    return "<tr><td>"+esc(litterLabel(l))+(l.demo?' <span class="flag">sample</span>':"")+"</td><td class=\"num\">"+fmt(s.costs)+"</td><td class=\"num\">"+fmt(s.costPerPuppy)+"</td><td class=\"num\">"+fmt(s.breakEven)+"</td><td class=\"num\">"+fmt(s.collected)+"</td><td class=\"num\">"+fmt(s.owed)+"</td><td class=\"num\">"+fmt(s.margin)+"</td></tr>";
+  }).join("") : '<tr><td colspan="7" class="muted">No litters yet.</td></tr>';
+  $("moneyTotCosts").textContent = fmt(totC); $("moneyTotCollected").textContent = fmt(totCol);
+  $("moneyTotOwed").textContent = fmt(totO); $("moneyTotMargin").textContent = fmt(totM);
+  var rows = allOwed();
+  $("moneyOwed").innerHTML = rows.length ? rows.map(function(r){
+    return "<tr><td>"+esc(r.puppy.name)+"</td><td>"+esc(r.litter?litterLabel(r.litter):"")+"</td><td>"+esc(r.puppy.buyerName||"—")+"</td><td>"+esc(r.puppy.buyerContact||"—")+"</td><td>"+esc(PUPSTATUS[r.puppy.status])+"</td><td class=\"num\">"+fmt(r.puppy.price)+"</td><td class=\"num\">"+fmt(puppyCollected(r.puppy))+"</td><td class=\"num\">"+fmt(r.owed)+"</td></tr>";
+  }).join("") : '<tr><td colspan="8" class="muted">No outstanding balances.</td></tr>';
+}
+function renderWaitlist(){
+  var q = ($("wlSearch").value||"").toLowerCase();
+  var rows = state.waitlist.filter(function(w){
+    if(!q) return true;
+    return (w.name+" "+w.contact+" "+w.prefs+" "+w.notes).toLowerCase().indexOf(q)>=0;
+  }).slice().sort(function(a,b){ return (a.dateAdded||"")<(b.dateAdded||"")?-1:1; });
+  $("wlCount").textContent = rows.length+" of "+state.waitlist.length+" shown";
+  $("wlList").innerHTML = rows.length ? rows.map(function(w){
+    var dep = w.depStatus==="paid" ? ('<span class="flag good">Paid '+fmt(w.depAmt)+'</span>') : (w.depStatus==="promised" ? '<span class="flag due">Promised</span>' : '<span class="flag">None</span>');
+    return "<tr><td>"+esc(w.dateAdded||"—")+"</td><td>"+esc(w.name)+(w.demo?' <span class="flag">sample</span>':"")+"</td><td>"+esc(w.contact||"—")+"</td><td>"+esc(w.prefs||"—")+"</td><td>"+dep+"</td><td><button class=\"btn small ghost\" data-edit-wl=\""+esc(w.id)+"\" type=\"button\">Edit</button> <button class=\"btn small danger\" data-del-wl=\""+esc(w.id)+"\" type=\"button\">Delete</button></td></tr>";
+  }).join("") : '<tr><td colspan="6" class="muted">No waitlist entries match.</td></tr>';
+}
+function renderSettings(){
+  if(document.activeElement && ["setKennel","setOwner","setGest"].indexOf(document.activeElement.id)>=0) return;
+  $("setKennel").value = state.settings.kennelName;
+  $("setOwner").value = state.settings.ownerName;
+  $("setGest").value = state.settings.gestationDays;
+}
+
+/* ---------- print ---------- */
+function printHTML(title, bodyHTML){
+  $("printSheet").innerHTML = "<h1>"+esc(title)+"</h1>"
+    + "<p>"+esc(state.settings.kennelName||"")+(state.settings.ownerName?" — "+esc(state.settings.ownerName):"")+" · Generated "+esc(todayStr())+"</p>"
+    + bodyHTML
+    + '<p style="margin-top:14px;font-size:11.5px">Prepared with LitterLedger from the breeder\'s own records. Record-keeping only — not veterinary, medical, legal, or tax advice.</p>';
+  window.print();
+}
+function printMoney(){
+  var rows = state.litters.map(function(l){
+    var s = litterStats(l);
+    return "<tr><td>"+esc(litterLabel(l))+"</td><td class=\"num\">"+fmt(s.costs)+"</td><td class=\"num\">"+fmt(s.costPerPuppy)+"</td><td class=\"num\">"+fmt(s.collected)+"</td><td class=\"num\">"+fmt(s.owed)+"</td><td class=\"num\">"+fmt(s.margin)+"</td></tr>";
+  }).join("");
+  var owed = allOwed().map(function(r){
+    return "<tr><td>"+esc(r.puppy.name)+"</td><td>"+esc(r.puppy.buyerName||"—")+"</td><td class=\"num\">"+fmt(r.owed)+"</td></tr>";
+  }).join("");
+  printHTML("LitterLedger — Money Summary",
+    "<h2>By litter</h2><table><thead><tr><th>Litter</th><th class=\"num\">Costs</th><th class=\"num\">Cost/puppy</th><th class=\"num\">Collected</th><th class=\"num\">Owed</th><th class=\"num\">Margin</th></tr></thead><tbody>"+rows+"</tbody></table>"
+    + "<h2>Outstanding balances</h2><table><thead><tr><th>Puppy</th><th>Buyer</th><th class=\"num\">Still owed</th></tr></thead><tbody>"+(owed||'<tr><td colspan="3">None</td></tr>')+"</tbody></table>");
+}
+/* ---------- events ---------- */
+function resetDogForm(){ editDogId=null; $("dogForm").reset(); $("dogFormTitle").textContent="Add a dog"; $("dogSave").textContent="Save dog"; $("dogCancelEdit").style.display="none"; }
+function resetLitterForm(){ editLitterId=null; $("litterForm").reset(); $("litLive").value="0"; $("litStill").value="0"; $("litterFormTitle").textContent="Add a litter"; $("litterSave").textContent="Save litter"; $("litterCancelEdit").style.display="none"; }
+function resetPupForm(){ editPupId=null; $("pupForm").reset(); $("pupFormTitle").textContent="Add a puppy"; $("pupSave").textContent="Save puppy"; $("pupCancelEdit").style.display="none"; }
+function resetWlForm(){ editWlId=null; $("wlForm").reset(); $("wlDate").value=todayStr(); $("wlFormTitle").textContent="Add to the waitlist"; $("wlSave").textContent="Save"; $("wlCancelEdit").style.display="none"; }
+
+function clearDemo(){
+  var dogGone = {}, litGone = {};
+  state.dogs.forEach(function(d){ if(d.demo) dogGone[d.id]=true; });
+  state.litters.forEach(function(l){ if(l.demo) litGone[l.id]=true; });
+  state.dogs = state.dogs.filter(function(d){ return !d.demo; });
+  state.litters = state.litters.filter(function(l){ return !l.demo; });
+  state.litters.forEach(function(l){ if(dogGone[l.damId]) l.damId=""; if(dogGone[l.sireId]) l.sireId=""; });
+  var litIds = {}; state.litters.forEach(function(l){ litIds[l.id]=true; });
+  state.puppies = state.puppies.filter(function(p){ return !p.demo && litIds[p.litterId]; });
+  state.costs = state.costs.filter(function(c){ return !c.demo && litIds[c.litterId]; });
+  state.waitlist = state.waitlist.filter(function(w){ return !w.demo; });
+  if(state.settings.kennelName.indexOf("Sample")===0) state.settings.kennelName = "";
+  if(state.settings.ownerName==="Demo Breeder") state.settings.ownerName = "";
+  state.meta.demoCleared = true;
+  save(); render();
+}
+
+function init(){
+  load();
+  var today = todayStr();
+  $("costDate").value = today; $("wlDate").value = today; $("wtDate").value = today;
+  $("tabBar").addEventListener("click", function(e){ var b = e.target.closest("button[data-tab]"); if(b) showTab(b.getAttribute("data-tab")); });
+
+  /* dogs */
+  $("dogForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = $("dogName").value.trim();
+    if(!name) return setMsg("dogMsg","Give the dog a name.");
+    var dob = $("dogDob").value;
+    if(dob && !validDate(dob)) return setMsg("dogMsg","Date of birth is not a valid date.");
+    var health = $("dogHealth").value.split("\n").map(function(x){ return x.trim().slice(0,200); }).filter(function(x){ return !!x; });
+    var rec = { name:name.slice(0,120), role:$("dogRole").value, breed:$("dogBreed").value.trim().slice(0,120), dob:dob||"", reg:$("dogReg").value.trim().slice(0,300), health:health, status:$("dogStatus").value, notes:$("dogNotes").value.trim().slice(0,300) };
+    if(editDogId){
+      var d = dogById(editDogId); if(!d) return;
+      Object.keys(rec).forEach(function(k){ d[k]=rec[k]; });
+      setMsg("dogMsg","Dog updated.", true);
+    } else {
+      rec.id = uid(); rec.demo = false; state.dogs.push(rec);
+      setMsg("dogMsg","Dog added.", true);
+    }
+    save(); resetDogForm(); render();
+  });
+  $("dogCancelEdit").addEventListener("click", function(){ resetDogForm(); setMsg("dogMsg",""); });
+
+  /* litters */
+  $("litterForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var damId = $("litDam").value, sireId = $("litSire").value;
+    if(!damId) return setMsg("litMsg","Add a dam in the Dogs tab first, then pick her here.");
+    if(!sireId) return setMsg("litMsg","Add a sire in the Dogs tab first, then pick him here.");
+    var mating = $("litMating").value, whelp = $("litWhelp").value;
+    if(mating && !validDate(mating)) return setMsg("litMsg","Mating date is not a valid date.");
+    if(whelp && !validDate(whelp)) return setMsg("litMsg","Whelp date is not a valid date.");
+    if(mating && whelp && whelp < mating) return setMsg("litMsg","Whelp date is before the mating date — check the dates.");
+    var rec = { damId:damId, sireId:sireId, matingDate:mating||"", whelpDate:whelp||"", bornLive:count($("litLive").value), bornStill:count($("litStill").value), notes:$("litNotes").value.trim().slice(0,300) };
+    if(editLitterId){
+      var l = litterById(editLitterId); if(!l) return;
+      Object.keys(rec).forEach(function(k){ l[k]=rec[k]; });
+      setMsg("litMsg","Litter updated.", true);
+    } else {
+      rec.id = uid(); rec.demo = false; state.litters.push(rec);
+      setMsg("litMsg","Litter added.", true);
+    }
+    save(); resetLitterForm(); render();
+  });
+  $("litterCancelEdit").addEventListener("click", function(){ resetLitterForm(); setMsg("litMsg",""); });
+
+  /* costs */
+  $("costForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var lid = $("costLitter").value;
+    if(!lid) return setMsg("costMsg","Add a litter first, then record its costs.");
+    var date = $("costDate").value;
+    if(!validDate(date)) return setMsg("costMsg","Pick a valid date.");
+    var amount = num($("costAmount").value);
+    if(!(amount>0)) return setMsg("costMsg","Enter an amount greater than $0.");
+    state.costs.push({ id:uid(), litterId:lid, date:date, cat:$("costCat").value, amount:round2(amount), notes:$("costNotes").value.trim().slice(0,300), demo:false });
+    save(); render();
+    $("costAmount").value=""; $("costNotes").value="";
+    setMsg("costMsg","Cost added.", true);
+  });
+  $("costFilter").addEventListener("change", renderCosts);
+
+  /* puppies */
+  $("pupForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var lid = $("pupLitter").value;
+    if(!lid) return setMsg("pupMsg","Add a litter first, then add its puppies.");
+    var name = $("pupName").value.trim();
+    if(!name) return setMsg("pupMsg","Give the puppy a name or collar ID.");
+    var dec = $("pupDeceased").value, plc = $("pupPlacement").value;
+    if(dec && !validDate(dec)) return setMsg("pupMsg","Deceased date is not a valid date.");
+    if(plc && !validDate(plc)) return setMsg("pupMsg","Placement date is not a valid date.");
+    var status = $("pupStatus").value;
+    var rec = { litterId:lid, name:name.slice(0,120), sex:$("pupSex").value, color:$("pupColor").value.trim().slice(0,120),
+      birthWt: Math.round(amt($("pupBirthWt").value)*10)/10, status:status, deceasedDate:dec||"",
+      price:round2(amt($("pupPrice").value)), deposit:round2(amt($("pupDeposit").value)), balancePaid:round2(amt($("pupBalancePaid").value)), extraCost:round2(amt($("pupExtra").value)),
+      buyerName:$("pupBuyer").value.trim().slice(0,120), buyerContact:$("pupContact").value.trim().slice(0,160), placementDate:plc||"", notes:$("pupNotes").value.trim().slice(0,300) };
+    if(editPupId){
+      var p = puppyById(editPupId); if(!p) return;
+      Object.keys(rec).forEach(function(k){ p[k]=rec[k]; });
+      setMsg("pupMsg","Puppy updated.", true);
+    } else {
+      rec.id = uid(); rec.weights = []; rec.demo = false; state.puppies.push(rec);
+      setMsg("pupMsg","Puppy added.", true);
+    }
+    save(); resetPupForm(); render();
+  });
+  $("pupCancelEdit").addEventListener("click", function(){ resetPupForm(); setMsg("pupMsg",""); });
+  $("pupFilter").addEventListener("change", renderPuppies);
+  $("wtPup").addEventListener("change", renderWeights);
+
+  /* weights */
+  $("wtForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var p = puppyById($("wtPup").value);
+    if(!p) return setMsg("wtMsg","Add a puppy first.");
+    var date = $("wtDate").value;
+    if(!validDate(date)) return setMsg("wtMsg","Pick a valid date.");
+    var oz = num($("wtOz").value);
+    if(!(oz>0)) return setMsg("wtMsg","Enter a weight greater than 0 oz.");
+    p.weights.push({ date:date, oz:Math.round(oz*10)/10 });
+    p.weights.sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
+    save(); render();
+    setMsg("wtMsg","Weight added for "+p.name+".", true);
+  });
+
+  /* waitlist */
+  $("wlForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = $("wlName").value.trim();
+    if(!name) return setMsg("wlMsg","Enter a name.");
+    var date = $("wlDate").value;
+    if(date && !validDate(date)) return setMsg("wlMsg","Date added is not a valid date.");
+    var rec = { name:name.slice(0,120), contact:$("wlContact").value.trim().slice(0,160), prefs:$("wlPrefs").value.trim().slice(0,300), depStatus:$("wlDepStatus").value, depAmt:round2(amt($("wlDepAmt").value)), dateAdded:date||"", notes:"" };
+    if(editWlId){
+      var w = null; state.waitlist.forEach(function(x){ if(x.id===editWlId) w=x; });
+      if(!w) return;
+      var keepNotes = w.notes;
+      Object.keys(rec).forEach(function(k){ w[k]=rec[k]; });
+      w.notes = keepNotes;
+      setMsg("wlMsg","Waitlist entry updated.", true);
+    } else {
+      rec.id = uid(); rec.demo = false; state.waitlist.push(rec);
+      setMsg("wlMsg","Added to the waitlist.", true);
+    }
+    save(); resetWlForm(); render();
+  });
+  $("wlCancelEdit").addEventListener("click", function(){ resetWlForm(); setMsg("wlMsg",""); });
+  $("wlSearch").addEventListener("input", renderWaitlist);
+
+  /* settings */
+  $("setForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var g = Math.floor(num($("setGest").value));
+    if(!(g>=1 && g<=200)) return setMsg("setMsg","Gestation days must be between 1 and 200.");
+    state.settings.kennelName = $("setKennel").value.trim().slice(0,120);
+    state.settings.ownerName = $("setOwner").value.trim().slice(0,120);
+    state.settings.gestationDays = g;
+    save(); render();
+    setMsg("setMsg","Settings saved.", true);
+  });
+
+  /* backup */
+  $("btnExport").addEventListener("click", function(){
+    var payload = JSON.stringify(state, null, 2);
+    try{
+      var blob = new Blob([payload], {type:"application/json"});
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "litterledger-backup.json";
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ try{ URL.revokeObjectURL(a.href); a.remove(); }catch(e){} }, 400);
+    }catch(e){ $("importText").value = payload; }
+  });
+  function doImport(text){
+    var p;
+    try{ p = JSON.parse(text); }catch(e){ return setMsg("importMsg","That is not valid backup JSON — import cancelled, your data is untouched."); }
+    if(!p || typeof p!=="object" || p.app!=="litterledger"){ return setMsg("importMsg","That file is not a LitterLedger backup — import cancelled, your data is untouched."); }
+    var clean = sanitizeState(p);
+    if(!clean){ return setMsg("importMsg","That backup could not be read — import cancelled, your data is untouched."); }
+    state = clean; save();
+    resetDogForm(); resetLitterForm(); resetPupForm(); resetWlForm();
+    render();
+    setMsg("importMsg","Backup imported.", true);
+  }
+  $("btnImportText").addEventListener("click", function(){ doImport($("importText").value); });
+  $("importFile").addEventListener("change", function(){
+    var f = this.files && this.files[0];
+    if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){ doImport(String(reader.result||"")); };
+    reader.readAsText(f);
+    this.value = "";
+  });
+
+  /* demo / erase / print */
+  $("btnClearDemo").addEventListener("click", function(){ clearDemo(); setMsg("dataMsg","Sample data cleared — your own records were kept.", true); });
+  $("btnClearDemoDash").addEventListener("click", function(){ clearDemo(); setMsg("dashMsg","Sample data cleared.", true); });
+  $("btnEraseAll").addEventListener("click", function(){
+    if(!confirm("Erase EVERYTHING — all dogs, litters, puppies, costs, waitlist entries, and settings? This cannot be undone.")) return;
+    state = blankState(); state.meta.demoCleared = true;
+    save(); resetDogForm(); resetLitterForm(); resetPupForm(); resetWlForm(); render();
+    setMsg("dataMsg","Everything erased. The app is empty and ready.", true);
+  });
+  $("btnPrintMoney").addEventListener("click", printMoney);
+
+  /* edit/delete delegation */
+  document.addEventListener("click", function(e){
+    var t = e.target;
+    function attr(n){ return t.getAttribute ? t.getAttribute(n) : null; }
+    var v;
+    if((v = attr("data-del-dog"))){
+      var dd = dogById(v);
+      if(!confirm("Delete dog \""+(dd?dd.name:v)+"\"? Litters and puppies that reference it keep their records. This cannot be undone.")) return;
+      state.dogs = state.dogs.filter(function(d){ return d.id!==v; });
+      save(); render(); return;
+    }
+    if((v = attr("data-edit-dog"))){
+      var d = dogById(v); if(!d) return;
+      editDogId = v;
+      $("dogName").value = d.name; $("dogRole").value = d.role; $("dogBreed").value = d.breed; $("dogDob").value = d.dob||"";
+      $("dogStatus").value = d.status; $("dogReg").value = d.reg; $("dogHealth").value = d.health.join("\n"); $("dogNotes").value = d.notes;
+      $("dogFormTitle").textContent = "Edit dog"; $("dogSave").textContent = "Update dog"; $("dogCancelEdit").style.display = "";
+      showTab("dogs"); return;
+    }
+    if((v = attr("data-del-litter"))){
+      var dl = litterById(v);
+      if(!confirm("Delete litter \""+(dl?litterLabel(dl):v)+"\"? Its puppies and cost entries are deleted with it. This cannot be undone.")) return;
+      state.litters = state.litters.filter(function(l){ return l.id!==v; });
+      state.puppies = state.puppies.filter(function(p){ return p.litterId!==v; });
+      state.costs = state.costs.filter(function(c){ return c.litterId!==v; });
+      if(editLitterId===v) resetLitterForm();
+      save(); render(); return;
+    }
+    if((v = attr("data-edit-litter"))){
+      var l = litterById(v); if(!l) return;
+      editLitterId = v;
+      render(); /* refresh selects so current values stick */
+      $("litDam").value = l.damId; $("litSire").value = l.sireId;
+      $("litMating").value = l.matingDate||""; $("litWhelp").value = l.whelpDate||"";
+      $("litLive").value = l.bornLive; $("litStill").value = l.bornStill; $("litNotes").value = l.notes;
+      $("litterFormTitle").textContent = "Edit litter"; $("litterSave").textContent = "Update litter"; $("litterCancelEdit").style.display = "";
+      showTab("litters"); return;
+    }
+    if((v = attr("data-del-cost"))){
+      var dc = null; state.costs.forEach(function(x){ if(x.id===v) dc=x; });
+      if(!confirm("Delete this cost entry"+(dc?(" ("+COSTCATS[dc.cat]+", "+fmt(dc.amount)+")"):"")+"? This cannot be undone.")) return;
+      state.costs = state.costs.filter(function(c){ return c.id!==v; });
+      save(); render(); return;
+    }
+    if((v = attr("data-del-pup"))){
+      var dp = puppyById(v);
+      if(!confirm("Delete puppy \""+(dp?dp.name:v)+"\"? This cannot be undone.")) return;
+      state.puppies = state.puppies.filter(function(p){ return p.id!==v; });
+      if(editPupId===v) resetPupForm();
+      save(); render(); return;
+    }
+    if((v = attr("data-edit-pup"))){
+      var p = puppyById(v); if(!p) return;
+      editPupId = v;
+      $("pupLitter").value = p.litterId; $("pupName").value = p.name; $("pupSex").value = p.sex; $("pupColor").value = p.color;
+      $("pupBirthWt").value = p.birthWt||""; $("pupStatus").value = p.status; $("pupDeceased").value = p.deceasedDate||"";
+      $("pupPrice").value = p.price||""; $("pupDeposit").value = p.deposit||""; $("pupBalancePaid").value = p.balancePaid||"";
+      $("pupExtra").value = p.extraCost||""; $("pupBuyer").value = p.buyerName; $("pupContact").value = p.buyerContact;
+      $("pupPlacement").value = p.placementDate||""; $("pupNotes").value = p.notes;
+      $("pupFormTitle").textContent = "Edit puppy"; $("pupSave").textContent = "Update puppy"; $("pupCancelEdit").style.display = "";
+      showTab("puppies"); return;
+    }
+    if((v = attr("data-del-wt"))){
+      var pup = puppyById($("wtPup").value); if(!pup) return;
+      var dw = pup.weights[parseInt(v,10)];
+      if(!confirm("Delete the weight entry for "+(dw?dw.date:"this date")+" ("+(dw?dw.oz:"")+" oz) for \""+pup.name+"\"? This cannot be undone.")) return;
+      pup.weights.splice(parseInt(v,10), 1);
+      save(); render(); return;
+    }
+    if((v = attr("data-del-wl"))){
+      var dwl = null; state.waitlist.forEach(function(x){ if(x.id===v) dwl=x; });
+      if(!confirm("Delete waitlist entry for \""+(dwl?dwl.name:v)+"\"? This cannot be undone.")) return;
+      state.waitlist = state.waitlist.filter(function(w){ return w.id!==v; });
+      if(editWlId===v) resetWlForm();
+      save(); render(); return;
+    }
+    if((v = attr("data-edit-wl"))){
+      var w = null; state.waitlist.forEach(function(x){ if(x.id===v) w=x; });
+      if(!w) return;
+      editWlId = v;
+      $("wlName").value = w.name; $("wlContact").value = w.contact; $("wlDate").value = w.dateAdded||"";
+      $("wlDepStatus").value = w.depStatus; $("wlDepAmt").value = w.depAmt||""; $("wlPrefs").value = w.prefs;
+      $("wlFormTitle").textContent = "Edit waitlist entry"; $("wlSave").textContent = "Update"; $("wlCancelEdit").style.display = "";
+      showTab("waitlist"); return;
+    }
+  });
+
+  render();
+}
+init();
+
+/* test/inspection API (also handy for support) */
+window.LL = {
+  getState: function(){ return state; },
+  litterStats: litterStats, puppyOwed: puppyOwed, puppyCollected: puppyCollected,
+  expectedWhelp: expectedWhelp, nextExpectedWhelp: nextExpectedWhelp,
+  litterCosts: litterCosts, allOwed: allOwed, fmt: fmt
+};
+
+/* ================= Legal — Terms of Use acceptance (catalog pattern v1.0) ================= */
+var TERMS_VERSION = "1.0";
+var LEGAL_APP_NAME = "LitterLedger";
+var LEGAL_HAS_DISCLAIMER = false;
+var LEGAL_TERMS_HTML = "<h3>Terms of Use \u2014 White Wolf Digital Apps</h3><p><b>Version 1.0 (DRAFT \u2014 pending attorney review)</b></p><p><b>Seller: White Wolf Tree Service LLC, selling digital products under the name \"White Wolf Digital\"</b></p><p><b>Contact: whitewolfoklahoma@gmail.com</b></p><h4>1. What you're buying</h4><p>Our apps (including ForgeFit AI, ForgeKitchen, TreeBid Pro, SnowBid,</p><p>WashPrice Pro, RoofSquares, JobProfit Tracker, PastureLedger, and the other</p><p>titles sold under White Wolf Digital) are single-file software tools. When</p><p>you buy one, you are buying a <b>license to use the file</b>, not ownership of</p><p>the software itself.</p><h4>2. Your license</h4><ul><li>You may use the app for your own personal or business work.</li><li>You may open it on your own devices (phone, tablet, computer) and move your</li></ul><p>  own data between them using the app's built-in backup/export tools.</p><ul><li>You may <b>not</b> resell, redistribute, give away, upload, or share the app</li></ul><p>  file (or a copy of it) with anyone else \u2014 including posting it online,</p><p>  bundling it with other products, or selling access to it.</p><ul><li>You may <b>not</b> claim the app as your own work, remove its branding or</li></ul><p>  notices, or use it to build a competing product for resale.</p><ul><li>One purchase = one buyer. A business purchase covers the buyer and their</li></ul><p>  own employees using it for that business's work; it does not cover other</p><p>  businesses.</p><h4>3. Your data stays yours \u2014 and stays on your device</h4><ul><li>The current versions of our apps run <b>entirely on your device</b>. They have</li></ul><p>  no accounts, no sign-in, no analytics, and they collect, transmit, and store</p><p>  <b>none</b> of your information on any server. We never see your data.</p><ul><li>Your records are stored in your browser/app storage on your device. **You</li></ul><p>  are responsible for backing them up** using the app's export tools. If you</p><p>  clear your browser data, lose your device, or uninstall the app, your</p><p>  records may be permanently lost, and we cannot recover them \u2014 we never had</p><p>  a copy.</p><ul><li>Files you export (backups, quotes, PDFs) are under your control. Where you</li></ul><p>  store or send them is up to you.</p><h4>4. Estimates are tools, not guarantees</h4><p>Every number our apps produce \u2014 bids, prices, costs, calorie targets,</p><p>projections, schedules, totals \u2014 is an **estimate generated from the</p><p>information you enter and the settings you choose**. Outputs are aids for</p><p>your own judgment, not guarantees of price, profit, outcome, or result. You</p><p>are responsible for checking any output before relying on it (see also the</p><p>disclaimer that applies to your app: Health Disclaimer for fitness/nutrition</p><p>apps, Estimator Disclaimer for contractor tools). If an input is wrong, the</p><p>output will be wrong.</p><h4>5. Acceptable use</h4><p>Don't use the apps to break the law, infringe anyone's rights, or</p><p>misrepresent quotes, invoices, or records to your own customers. For the</p><p>fitness apps, the guardrails in the app (healthy-rate limits, calorie floor)</p><p>are part of the product \u2014 don't treat the app as a way around them.</p><h4>6. Provided \"as is\"</h4><p>The apps are provided **\"as is\" and \"as available,\" without warranties of</p><p>any kind**, express or implied \u2014 including merchantability, fitness for a</p><p>particular purpose, accuracy of calculations, and uninterrupted or</p><p>error-free operation \u2014 to the maximum extent allowed by law. Software has</p><p>bugs; browsers change; we work to fix problems but do not promise any app is</p><p>error-free or will work on every device or browser forever.</p><h4>7. Limitation of liability</h4><p>To the maximum extent allowed by law:</p><ul><li>We are **not liable for indirect, incidental, special, or consequential</li></ul><p>  damages** \u2014 including lost profits, lost or mispriced jobs, lost data, or</p><p>  business interruption \u2014 arising from use of the apps.</p><ul><li>Our total liability for any claim connected to an app is limited to the</li></ul><p>  <b>amount you paid for that app</b>.</p><ul><li>Nothing in these terms limits liability that cannot legally be limited.</li></ul><h4>8. Refunds</h4><p>Refunds are handled **by the storefront you bought from, under that</p><p>storefront's policy** \u2014 Gumroad's refund policy for Gumroad purchases, and</p><p>Google Play's refund policy for Play purchases. These terms do not add to,</p><p>replace, or override the storefront's refund rules. If a file is defective</p><p>and won't open, contact us at whitewolfoklahoma@gmail.com and we'll fix or</p><p>replace the file.</p><h4>9. Updates and changes to these terms</h4><ul><li>We may release updated versions of an app. Updates may add, change, or</li></ul><p>  remove features.</p><ul><li>We may update these terms. The version you agreed to is recorded in the</li></ul><p>  app (version number and date) at first-run acceptance. If terms change,</p><p>  the app may ask you to accept the new version once on next open. Updated</p><p>  terms apply going forward, not retroactively.</p><ul><li>If you don't agree to an updated version of the terms, stop using the app.</li></ul><h4>10. Governing law</h4><p>These terms are governed by the laws of the <b>State of Oklahoma</b>, USA.</p><p>(Attorney to confirm governing law and venue before publication.)</p><h4>11. Contact</h4><p>White Wolf Tree Service LLC (White Wolf Digital) \u2014</p><p>whitewolfoklahoma@gmail.com.</p><h4>CONNECTED FEATURES \u2014 takes effect only when these features ship</h4><p>*The sections below apply only to future connected features (device sync via</p><p>Health Connect, AI voice logging, and the AI Goal Preview in ForgeFit). They</p><p>do not apply to the current offline versions, which never transmit data.*</p><ul><li><b>Opt-in only.</b> Connected features are off by default. Each one asks for</li></ul><p>  your separate, explicit consent \u2014 on its own consent screen, in plain</p><p>  language \u2014 before anything leaves your device. Declining never disables</p><p>  the app's offline features.</p><ul><li><b>What gets sent.</b> Only what the consent screen names, only when you use</li></ul><p>  the feature: for example, a meal description (text, or audio only if cloud</p><p>  transcription is on) for AI voice logging, or the single photo you choose</p><p>  for an AI Goal Preview.</p><ul><li><b>No retention by us.</b> Our relay service passes your request to the named</li></ul><p>  AI provider and keeps nothing \u2014 no copies of your photos, audio,</p><p>  transcripts, or entries are stored on our servers. Provider handling is</p><p>  described on the consent screen and in the Privacy Policy.</p><ul><li><b>Health data stays on the device.</b> Device sync (Health Connect) reads</li></ul><p>  your health data on your phone and stores it in the app on your phone. It</p><p>  is not uploaded to us.</p><ul><li><b>Allowances.</b> Some connected features run on third-party AI services we</li></ul><p>  pay for per use, so they may include a monthly allowance described in the</p><p>  app (for example, a set number of AI previews or voice entries per month),</p><p>  with optional additional credits. Allowances and pricing will be shown in</p><p>  the app before you use the feature; they are not a subscription unless the</p><p>  app says so in plain words.</p><ul><li><b>Permissions.</b> Connected features may request device permissions (such</li></ul><p>  as Health Connect access or the microphone) at the moment you first use</p><p>  them. You can revoke permissions any time in your device settings; the</p><p>  related feature will simply stop working.</p>";
+var LEGAL_DISCLAIMER_HTML = "<h3>Estimator Disclaimer \u2014 Contractor &amp; Trade Tools</h3><p>**Applies to: TreeBid Pro, SnowBid, WashPrice Pro, RoofSquares, JobProfit</p><p>Tracker, FieldForms Toolkit, PaintPro, FenceDeck, MarketMaker, and the other</p><p>estimating/pricing tools sold under White Wolf Digital \u2014 including bundles</p><p>that contain them.**</p><h4>Estimating aids, not finished quotes</h4><ul><li>These apps are <b>estimating and record-keeping aids</b>. Every bid, price,</li></ul><p>  cost, measurement, and total they produce is an **estimate based on the</p><p>  information and rates you enter**.</p><ul><li>**You \u2014 the business owner \u2014 are responsible for verifying everything</li></ul><p>  before you quote a customer:** measurements and quantities, site</p><p>  conditions, your current material and labor costs, your rates and margins,</p><p>  taxes, permit and license requirements, disposal rules, and any contract</p><p>  terms.</p><ul><li>Default rates, presets, and sample data included in the apps are starting</li></ul><p>  points only. They are not market prices, not industry standards, and not</p><p>  a recommendation of what you should charge.</p><ul><li>A saved quote keeps the prices in effect when you created it (price</li></ul><p>  snapshot). Changing your presets later does not change saved quotes \u2014</p><p>  and a saved quote is still your responsibility to review before sending.</p><h4>Specific tools</h4><ul><li><b>TreeBid Pro:</b> tree work is dangerous and site-specific. Difficulty</li></ul><p>  factors and presets cannot see the actual tree, lean, rot, targets, or</p><p>  access. Inspect every job in person before final pricing. The \"Invoice</p><p>  with Wave\" feature is an open-and-paste handoff \u2014 TreeBid does not</p><p>  connect to Wave, and the invoice you send from Wave is yours.</p><ul><li><b>RoofSquares / measurement tools:</b> confirm roof measurements and pitch</li></ul><p>  in person or by your usual method before ordering materials.</p><ul><li><b>SnowBid / seasonal tools:</b> route times, snowfall amounts, and service</li></ul><p>  pricing vary by storm and site; seasonal contracts are your agreement</p><p>  with your customer, on your terms.</p><ul><li><b>JobProfit Tracker:</b> profit figures depend on the costs you enter.</li></ul><p>  The app is not accounting or tax software and does not replace your</p><p>  bookkeeper or accountant.</p><h4>Bottom line</h4><p>If an output and your judgment disagree, trust your judgment \u2014 then fix the</p><p>input. We are not responsible for jobs won, lost, or mispriced based on app</p><p>outputs, within the limits of the Terms of Use.</p>";
+(function(){
+  var lst = document.createElement("style");
+  lst.textContent = "@media print{ #legalOverlay{ display:none !important; } }";
+  document.head.appendChild(lst);
+})();
+function sanitizeLegal(v){
+  if(!v || typeof v !== "object") return null;
+  if(typeof v.termsVersion !== "string" || typeof v.acceptedDate !== "string") return null;
+  return { termsVersion: v.termsVersion.slice(0, 10), acceptedDate: v.acceptedDate.slice(0, 40), disclaimerShown: !!v.disclaimerShown };
+}
+function legalRecord(){
+  try{ var s = state; return (s && s.legal) ? sanitizeLegal(s.legal) : null; }catch(e){ return null; }
+}
+function legalVersionCmp(a, b){
+  var pa = String(a).split("."), pb = String(b).split(".");
+  for(var i = 0; i < 3; i++){ var d = (parseInt(pa[i], 10) || 0) - (parseInt(pb[i], 10) || 0); if(d) return d; }
+  return 0;
+}
+function legalAcceptLine(){
+  var rec = legalRecord();
+  if(rec && rec.acceptedDate) return "You agreed to Terms v" + rec.termsVersion + " on " + rec.acceptedDate.slice(0, 10) + ".";
+  return "No Terms acceptance is recorded on this device yet \u2014 the current Terms will be shown for your agreement.";
+}
+function legalSectionHTML(){
+  var h = '<div style="border-top:2px solid rgba(127,127,127,.35);margin-top:20px;padding-top:14px;">'
+    + '<h2>Legal</h2>'
+    + '<p>' + legalAcceptLine() + '</p>'
+    + '<h3>Terms of Use (v' + TERMS_VERSION + ')</h3>'
+    + '<div style="max-height:340px;overflow-y:auto;border:1px solid rgba(127,127,127,.4);border-radius:8px;padding:10px 14px;font-size:14px;line-height:1.55;">' + LEGAL_TERMS_HTML + '</div>';
+  if(LEGAL_HAS_DISCLAIMER){
+    h += '<h3>Estimator Disclaimer</h3>'
+      + '<div style="max-height:260px;overflow-y:auto;border:1px solid rgba(127,127,127,.4);border-radius:8px;padding:10px 14px;font-size:14px;line-height:1.55;">' + LEGAL_DISCLAIMER_HTML + '</div>';
+  }
+  h += '<h3>Privacy</h3>'
+    + '<p>This app collects no data. It has no accounts, no sign-in, no analytics, and no server \u2014 everything you enter is stored only on this device, in this browser\u2019s storage, and nothing is transmitted anywhere. Files you export (backups, quotes, prints) are under your control. You are responsible for backing up your records with the app\u2019s export tools.</p>'
+    + '<p>Sold by White Wolf Tree Service LLC (White Wolf Digital) \u2014 whitewolfoklahoma@gmail.com</p>'
+    + '</div>';
+  return h;
+}
+function legalFillSection(){
+  var el = document.getElementById("legalSection");
+  if(!el) return;
+  var sig = legalAcceptLine();
+  if(el.getAttribute("data-legal-filled") === sig) return;
+  el.innerHTML = legalSectionHTML(); el.setAttribute("data-legal-filled", sig);
+}
+function legalRefreshSection(){
+  var el = document.getElementById("legalSection");
+  if(el){ el.innerHTML = legalSectionHTML(); el.setAttribute("data-legal-filled", legalAcceptLine()); }
+}
+function legalShowOverlay(isUpdate){
+  if(document.getElementById("legalOverlay")) return;
+  var ov = document.createElement("div");
+  ov.id = "legalOverlay";
+  ov.setAttribute("style", "position:fixed;inset:0;z-index:99999;background:rgba(8,10,14,.74);overflow-y:auto;padding:20px 12px;display:flex;align-items:flex-start;justify-content:center;");
+  var discBtn = LEGAL_HAS_DISCLAIMER ? '<button type="button" id="legalReadDisc" style="min-height:44px;padding:10px 14px;border-radius:10px;border:1px solid #9aa4b2;background:#ffffff;color:#1c2733;font-size:15px;cursor:pointer;">Read the Estimator Disclaimer</button>' : '';
+  var checkLabel = LEGAL_HAS_DISCLAIMER ? "I have read the disclaimer and I agree to the Terms of Use" : "I have read and I agree to the Terms of Use";
+  ov.innerHTML = '<div style="background:#ffffff;color:#1c2733;max-width:560px;width:100%;border-radius:14px;padding:22px 20px;box-shadow:0 18px 50px rgba(0,0,0,.45);font-size:15px;line-height:1.55;">'
+    + '<h2 style="margin:0 0 6px;font-size:21px;">' + LEGAL_APP_NAME + ' \u2014 Terms of Use</h2>'
+    + (isUpdate ? '<p style="background:#fdf3d7;border:1px solid #e4cf8a;border-radius:8px;padding:8px 10px;"><b>Our terms were updated (v' + TERMS_VERSION + ').</b></p>' : '')
+    + '<p style="font-size:16px;"><b>Your data stays on your device.</b><br><b>Estimates are aids, not guarantees.</b><br><b>You\'re responsible for checking outputs before you rely on them.</b></p>'
+    + '<p>The full Terms' + (LEGAL_HAS_DISCLAIMER ? ' and Disclaimer are' : ' are') + ' one tap away, now and any time in Settings \u2192 Legal.</p>'
+    + '<div id="legalReader" style="display:none;max-height:44vh;overflow-y:auto;border:1px solid #d5dbe3;border-radius:10px;padding:10px 14px;margin:10px 0;font-size:14px;"></div>'
+    + '<p style="display:flex;gap:8px;flex-wrap:wrap;"><button type="button" id="legalReadTerms" style="min-height:44px;padding:10px 14px;border-radius:10px;border:1px solid #9aa4b2;background:#ffffff;color:#1c2733;font-size:15px;cursor:pointer;">Read the full Terms</button>' + discBtn + '</p>'
+    + '<label style="display:flex;gap:10px;align-items:flex-start;margin:12px 0;cursor:pointer;"><input type="checkbox" id="legalCheck" style="width:22px;height:22px;min-width:22px;margin-top:1px;cursor:pointer;"><span>' + checkLabel + '</span></label>'
+    + '<button type="button" id="legalAgree" disabled style="min-height:52px;width:100%;border:0;border-radius:10px;background:#1f5fa8;color:#ffffff;font-size:17px;font-weight:700;cursor:pointer;opacity:.55;">I Agree</button>'
+    + '<p style="font-size:13px;color:#5a6675;margin-bottom:0;">Your records stay loaded behind this screen and are never deleted or locked, whether or not you agree now.</p>'
+    + '</div>';
+  document.body.appendChild(ov);
+  var reader = ov.querySelector("#legalReader");
+  var showing = "";
+  function toggleReader(kind){
+    if(showing === kind){ reader.style.display = "none"; showing = ""; return; }
+    reader.innerHTML = kind === "terms" ? LEGAL_TERMS_HTML : LEGAL_DISCLAIMER_HTML;
+    reader.style.display = "block"; showing = kind;
+    reader.scrollTop = 0;
+  }
+  ov.querySelector("#legalReadTerms").addEventListener("click", function(){ toggleReader("terms"); });
+  var db = ov.querySelector("#legalReadDisc");
+  if(db) db.addEventListener("click", function(){ toggleReader("disc"); });
+  var legalChk = ov.querySelector("#legalCheck");
+  var legalAgreeBtn = ov.querySelector("#legalAgree");
+  legalChk.addEventListener("change", function(){ legalAgreeBtn.disabled = !legalChk.checked; legalAgreeBtn.style.opacity = legalChk.checked ? "1" : ".55"; });
+  legalAgreeBtn.addEventListener("click", function(){
+    if(!legalChk.checked) return;
+    try{ state.legal = { termsVersion: TERMS_VERSION, acceptedDate: new Date().toISOString(), disclaimerShown: LEGAL_HAS_DISCLAIMER }; save(); }catch(e){}
+    if(ov.parentNode) ov.parentNode.removeChild(ov);
+    legalRefreshSection();
+  });
+}
+function legalInit(){
+  legalFillSection();
+  var rec = legalRecord();
+  if(rec && legalVersionCmp(rec.termsVersion, TERMS_VERSION) >= 0) return;
+  legalShowOverlay(!!rec);
+}
+if(typeof MutationObserver !== "undefined"){
+  var legalObs = new MutationObserver(function(){ legalFillSection(); });
+  legalObs.observe(document.documentElement, { childList: true, subtree: true });
+}
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", function(){ setTimeout(legalInit, 30); });
+else setTimeout(legalInit, 30);
+
+</script>
+</body>
+</html>
